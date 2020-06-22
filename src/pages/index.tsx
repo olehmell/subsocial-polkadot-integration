@@ -21,7 +21,7 @@ export default function Home() {
           wrapperCol={{ span: 8 }}
         >
           <InputNumber
-            size="large"
+            size='large'
             min={1}
             max={10}
             style={{ width: 100 }}
