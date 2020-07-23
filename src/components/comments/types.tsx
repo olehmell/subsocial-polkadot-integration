@@ -8,3 +8,7 @@ export type CommentDto = {
   }
   parentId?: string
 }
+
+export type CommentValue = Omit<CommentDto,'id'> & {
+  id?: string
+}

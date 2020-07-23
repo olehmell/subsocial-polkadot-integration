@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Comment, Avatar, Form, Button, List, Input } from 'antd';
+import { List } from 'antd';
 import ViewComment from './ViewComment';
-import { CommentDto } from './types';
+import { CommentDto, CommentValue } from './types';
 import { useOrbitDbContext } from '../orbitdb';
-
-const { TextArea } = Input;
+import CommentEditor from './CommentEditor';
 
 type CommentListProps = {
   comments: CommentDto[]
@@ -19,30 +18,6 @@ const CommentList = ({ comments }: CommentListProps) => (
   />
 );
 
-type EditorProps = {
-  value?: string,
-  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void,
-  onSubmit?: () => void,
-  submitting?: boolean
-}
-
-const Editor = ({ onChange, onSubmit, submitting, value = '' }: EditorProps) => (
-  <>
-    <Form.Item>
-      <TextArea rows={4} onChange={onChange} value={value} />
-    </Form.Item>
-    <Form.Item>
-      <Button htmlType="submit" loading={submitting} onClick={onSubmit} type="primary">
-        Add Comment
-      </Button>
-    </Form.Item>
-  </>
-);
-
-type CommentValue = Omit<CommentDto,'id'> & {
-  id?: string
-}
-
 const feedItemToComment = (e: any): CommentDto => {
   // console.log('e', e)
   const value = e.payload.value as CommentValue
@@ -54,10 +29,8 @@ const feedItemToComment = (e: any): CommentDto => {
 
 export const Comments = () => {
   const [ comments, setComments ] = useState<CommentDto[]>([])
-  const [ submitting, setSubmitting ] = useState(false)
-  const [ value, setValue ] = useState('')
 
-  const { db, owner } = useOrbitDbContext()
+  const { db } = useOrbitDbContext()
 
   const loadAllComments = () => {
     const allComments: CommentDto[] = db.iterator({ limit: -1 /*, reverse: true*/ })
@@ -67,58 +40,12 @@ export const Comments = () => {
     setComments(allComments)
   }
 
+  const onCommentAdded = (comment: CommentDto) => setComments([ ...comments, comment ])
+
   useEffect(loadAllComments, [])
 
-  const addComment = async (body: string) => {
-    const comment: CommentValue = {
-      owner,
-      body: body?.trim(),
-      created: {
-        account: owner,
-        time: new Date().toUTCString()
-      },
-      parentId: undefined // TODO add parent id
-    }
-    const hash = await db.add(comment, { pin: true })
-    console.log('Added to OrbitDB log under hash:', hash)
-
-    setComments([ ...comments, { id: hash, ...comment }])
-  }
-
-  const handleSubmit = async () => {
-    if (!value) {
-      return;
-    }
-
-    setSubmitting(true);
-    
-    await addComment(value)
-    
-    setSubmitting(false)
-    setValue('')
-  };
-
-  const handleChange = (e: React.ChangeEvent<any>) => {
-    setValue(e.target.value)
-  };
-
-  return <>
+  return <div>
+    <CommentEditor onCommentAdded={onCommentAdded} />
     {comments.length > 0 && <CommentList comments={comments} />}
-    <Comment
-      avatar={
-        <Avatar
-          src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
-          alt="Han Solo"
-        />
-      }
-      content={
-        <Editor
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          submitting={submitting}
-          value={value}
-        />
-      }
-    />
-  </>
+  </div>
 }
