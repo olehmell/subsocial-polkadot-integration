@@ -2,11 +2,11 @@ import React, { createElement, useState } from 'react';
 import { Comment, Tooltip, Avatar } from 'antd';
 import moment from 'moment';
 import { DislikeOutlined, LikeOutlined, DislikeFilled, LikeFilled } from '@ant-design/icons';
-import { CommenDto } from './types';
+import { CommentDto } from './types';
 import { CommentProps } from 'antd/lib/comment'
 
 export type ViewCommentProps = Partial<CommentProps> & {
-  comment: CommenDto
+  comment: CommentDto
 }
 
 export const ViewComment = ({ comment: { body, owner, created } ,...antProps}: ViewCommentProps) => {

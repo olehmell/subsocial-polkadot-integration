@@ -1,4 +1,4 @@
-export type CommenDto = {
+export type CommentDto = {
   id: string,
   body: string,
   owner: string,
