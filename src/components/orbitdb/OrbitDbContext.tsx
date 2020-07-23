@@ -29,8 +29,8 @@ export const OrbitDbProvider = (props: React.PropsWithChildren<{}>) => {
 
       const orbitdb = await OrbitDB.createInstance(ipfs)
       // const db = await orbitdb.log('hello2') // this works!
-      console.log(orbitdb)
-      const orbitdbAddress = '/orbitdb/zdpuB2f8FEQgrzAnnvPcpqhcVPgPSGwpXyjgqat6rLEHMtkbu/user.comments'
+      // console.log(orbitdb)
+      const orbitdbAddress = '/orbitdb/zdpuAv7x7gZ57NW6vDi1nHU16UbfR42URTZbcgxb1X5XP4o4N/user.comments.4'
       const db = await orbitdb.open(orbitdbAddress, {
         // create: true,
         type: 'feed',
@@ -42,12 +42,12 @@ export const OrbitDbProvider = (props: React.PropsWithChildren<{}>) => {
       // const peerId = ''
       // await db.access.grant('write', id2)
 
-      // Doesn't work
-      // const db = await orbitdb.create('user.comments', 'feed', {
+      // const db = await orbitdb.create('user.comments.3', 'feed', {
       //   accessController: {
       //     write: [
+      //       '*' // Anyone can write
       //       // Give access to ourselves
-      //       orbitdb.identity.id,
+      //       // orbitdb.identity.id,
       //       // Give access to the second peer
       //       // peerId
       //     ]
@@ -65,8 +65,6 @@ export const OrbitDbProvider = (props: React.PropsWithChildren<{}>) => {
         (window as any).db = db;
         // console.log('HINT: See window.orbitdb and window.db')
       }
-      console.log('orbitdb.identity:', orbitdb.identity)
-      console.log('OrbitDB db:', db)
     }
     initOrbitDB()
   }, [ false ])

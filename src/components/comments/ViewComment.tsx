@@ -4,16 +4,30 @@ import moment from 'moment';
 import { DislikeOutlined, LikeOutlined, DislikeFilled, LikeFilled } from '@ant-design/icons';
 import { CommentDto } from './types';
 import { CommentProps } from 'antd/lib/comment'
+import { useCommentsContext, useGetRepliesById } from './СommentContext';
+import CommentEditor from './CommentEditor';
+import { CommentList } from './Comments';
 
 export type ViewCommentProps = Partial<CommentProps> & {
   comment: CommentDto
 }
 
-export const ViewComment = ({ comment: { body, owner, created } ,...antProps}: ViewCommentProps) => {
+type RepliesListProps = {
+  id: string
+}
+
+const RepliesList = ({ id }: RepliesListProps) => {
+  const replies = useGetRepliesById(id)
+  return <CommentList comments={replies} />
+}
+
+export const ViewComment = ({ comment: { id, body, owner, created } ,...antProps}: ViewCommentProps) => {
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
   const [action, setAction] = useState<string>();
-  
+  const [ showReplyForm, setShowReplyForm ] = useState(false)
+  const { onCommentAdded } = useCommentsContext()
+
   const time = moment(created.time)
 
   const like = () => {
@@ -43,7 +57,12 @@ export const ViewComment = ({ comment: { body, owner, created } ,...antProps}: V
         <span className="comment-action">{dislikes}</span>
       </span>
     </Tooltip>,
-    <span key="comment-basic-reply-to">Reply</span>,
+    <span
+      key="comment-basic-reply-to"
+      onClick={() => setShowReplyForm(!showReplyForm)}
+    >
+      Reply
+    </span>,
   ];
 
   return (
@@ -65,7 +84,17 @@ export const ViewComment = ({ comment: { body, owner, created } ,...antProps}: V
           <span>{time.fromNow()}</span>
         </Tooltip>
       }
-    />
+    >
+      {showReplyForm &&
+        <CommentEditor
+          onCommentAdded={(comment) => {
+            onCommentAdded(comment)
+            setShowReplyForm(false)
+          }}
+          parentId={id}
+        />}
+      <RepliesList id={id} />
+    </Comment>
   );
 };
 

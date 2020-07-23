@@ -1,51 +1,37 @@
-import React, { useState, useEffect } from 'react'
+import React, {  } from 'react'
 import { List } from 'antd';
 import ViewComment from './ViewComment';
-import { CommentDto, CommentValue } from './types';
-import { useOrbitDbContext } from '../orbitdb';
+import { CommentDto } from './types';
 import CommentEditor from './CommentEditor';
+import { useGetRootComments, useCommentsContext } from './СommentContext';
 
 type CommentListProps = {
-  comments: CommentDto[]
+  comments: CommentDto[],
+  header?: React.ReactNode 
 }
 
-const CommentList = ({ comments }: CommentListProps) => (
-  <List
-    dataSource={comments}
-    header={`${comments.length} ${comments.length > 1 ? 'replies' : 'reply'}`}
-    itemLayout="horizontal"
-    renderItem={(comment) => <ViewComment comment={comment} />}
-  />
-);
+export const CommentList = ({ comments, header }: CommentListProps) => {
 
-const feedItemToComment = (e: any): CommentDto => {
-  // console.log('e', e)
-  const value = e.payload.value as CommentValue
-  return {
-    id: e.hash as string,
-    ...value
-  }
+  return comments.length ? <List
+  dataSource={comments}
+  header={header}
+  itemLayout="horizontal"
+  renderItem={(comment) => <ViewComment comment={comment} />}
+/> : null
 }
 
 export const Comments = () => {
-  const [ comments, setComments ] = useState<CommentDto[]>([])
-
-  const { db } = useOrbitDbContext()
-
-  const loadAllComments = () => {
-    const allComments: CommentDto[] = db.iterator({ limit: -1 /*, reverse: true*/ })
-      .collect()
-      .map(feedItemToComment)
-
-    setComments(allComments)
-  }
-
-  const onCommentAdded = (comment: CommentDto) => setComments([ ...comments, comment ])
-
-  useEffect(loadAllComments, [])
+  const { onCommentAdded } = useCommentsContext()
+  const comments = useGetRootComments()
 
   return <div>
     <CommentEditor onCommentAdded={onCommentAdded} />
-    {comments.length > 0 && <CommentList comments={comments} />}
+    {comments.length > 0 &&
+      <CommentList
+        comments={comments}
+        header={`${comments.length} ${comments.length > 1 ? 'replies' : 'reply'}`}
+      />}
   </div>
 }
+
+
