@@ -1,88 +1,141 @@
-import {
-  Form,
-  Select,
-  InputNumber,
-  DatePicker,
-  Switch,
-  Slider,
-  Button,
-} from 'antd'
+import { useEffect, useState } from 'react'
+import { Comments } from '../components/Comments'
 
-const FormItem = Form.Item
-const Option = Select.Option
+const IpfsClient = require('ipfs-http-client')
+const OrbitDB = require('orbit-db')
 
-export default function Home() {
-  return (
-    <div style={{ marginTop: 100 }}>
-      <Form layout="horizontal">
-        <FormItem
-          label="Input Number"
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 8 }}
-        >
-          <InputNumber
-            size='large'
-            min={1}
-            max={10}
-            style={{ width: 100 }}
-            defaultValue={3}
-            name="inputNumber"
-          />
-          <a href="#">Link</a>
-        </FormItem>
+const ipfs = IpfsClient('/ip4/127.0.0.1/tcp/5001')
 
-        <FormItem
-          label="Switch"
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 8 }}
-        >
-          <Switch defaultChecked name="switch" />
-        </FormItem>
+// Your identity id can be retrieved with:
+// console.log(db.identity.id)
 
-        <FormItem
-          label="Slider"
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 8 }}
-        >
-          <Slider defaultValue={70} />
-        </FormItem>
-
-        <FormItem
-          label="Select"
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 8 }}
-        >
-          <Select
-            size="large"
-            defaultValue="lucy"
-            style={{ width: 192 }}
-            name="select"
-          >
-            <Option value="jack">jack</Option>
-            <Option value="lucy">lucy</Option>
-            <Option value="disabled" disabled>
-              disabled
-            </Option>
-            <Option value="yiminghe">yiminghe</Option>
-          </Select>
-        </FormItem>
-
-        <FormItem
-          label="DatePicker"
-          labelCol={{ span: 8 }}
-          wrapperCol={{ span: 8 }}
-        >
-          <DatePicker name="startDate" />
-        </FormItem>
-        <FormItem style={{ marginTop: 48 }} wrapperCol={{ span: 8, offset: 8 }}>
-          <Button size="large" type="primary" htmlType="submit">
-            OK
-          </Button>
-          <Button size="large" style={{ marginLeft: 8 }}>
-            Cancel
-          </Button>
-        </FormItem>
-      </Form>
-    </div>
-  )
+type Orbit = {
+  orbitdb: any
+  db: any
 }
+
+type Message = {
+  hash: string
+  value: object
+}
+
+export function HelloOrbit({ orbitdb, db }: Orbit) {
+  const [ hashes, setHashes ] = useState<string[]>([])
+  const [ messages, setMessages ] = useState<Message[]>([])
+
+  // useEffect(() => {
+  //   reloadMessages()
+  // }, [ hashes.length ])
+
+  const reloadMessages = () => {
+    const allMessages = db.iterator({ limit: -1, reverse: true })
+      .collect()
+      .map((e: any) => {
+        // console.log('e', e)
+        return {
+          hash: e.hash,
+          value: e.payload.value
+        }
+      })
+
+    setMessages(allMessages)
+  }
+
+  const addToLog = async () => {
+    const msg = { name: 'Oleh at ' + new Date().toLocaleString() }
+    const hash = await db.add(msg, { pin: true })
+    console.log('Added to OrbitDB log under hash:', hash)
+
+    const newHashes = hashes.concat(hash)
+    console.log('New hashes:', newHashes)
+
+    setHashes(newHashes)
+
+    reloadMessages()
+  }
+
+  return <>
+    <div>Hashes count: {hashes.length}</div>
+    <div><button onClick={addToLog}>Add to log</button></div>
+    <div><ol>{messages.map(({ hash, value }) =>
+      <li key={hash}>
+        <code>{JSON.stringify(value)}</code>
+        <span style={{ color: 'grey' }}> • Hash: <code>{hash}</code></span>
+      </li>
+    )}</ol></div>
+  </>
+}
+
+export default function OrbitContext() {
+  const [ orbit, setOrbit ] = useState<Orbit>()
+
+  useEffect(() => {
+    async function initOrbitDB() {
+      // Oleh's pub key: 
+      // 3044022022b77f26a744e429c0ae88c66215038190a5114d2e05e44b96af72b77bc43a4b02206d73182b74d40e11690af11afe95d0fa372287b13d754c92ff98c7254eaf6890
+
+      // Oleh's id:
+      // 03c4097f9403cd349a867455fa80272171fbb20a604e8a572aff8d30ac073a0b7b
+
+      const orbitdb = await OrbitDB.createInstance(ipfs)
+      // const db = await orbitdb.log('hello2') // this works!
+      console.log(orbitdb)
+      const orbitdbAddress = '/orbitdb/zdpuB2f8FEQgrzAnnvPcpqhcVPgPSGwpXyjgqat6rLEHMtkbu/user.comments'
+      const db = await orbitdb.open(orbitdbAddress, {
+        // create: true,
+        type: 'feed',
+        replicate: true
+        // overwrite (boolean): Overwrite an existing database (Default: false)
+        // replicate (boolean): Replicate the database with peers, requires IPFS PubSub. (Default: true)
+      })
+
+      // const peerId = ''
+      // await db.access.grant('write', id2)
+
+      // Doesn't work
+      // const db = await orbitdb.create('user.comments', 'feed', {
+      //   accessController: {
+      //     write: [
+      //       // Give access to ourselves
+      //       orbitdb.identity.id,
+      //       // Give access to the second peer
+      //       // peerId
+      //     ]
+      //   },
+      //   // overwrite: true,
+      //   // replicate: false,
+      //   // meta: { hello: 'meta hello' }
+      // })
+      await db.load()
+      // database is now ready to be queried
+
+      setOrbit({ orbitdb, db })
+      if (window) {
+        (window as any).orbitdb = orbitdb;
+        (window as any).db = db;
+        // console.log('HINT: See window.orbitdb and window.db')
+      }
+      console.log('orbitdb.identity:', orbitdb.identity)
+      console.log('OrbitDB db:', db)
+    }
+    initOrbitDB()
+  }, [ false ])
+
+  const status = orbit
+    ? <b style={{ color: 'green' }}>READY</b>
+    : <em style={{ color: 'red' }}>Connecting...</em>
+
+  return <>
+    <div>OrbitDB: {status}</div>
+    {orbit && <HelloOrbit {...orbit} />}
+    <Comments />
+  </>
+}
+
+
+// To get all store entries:
+
+// console.log('All entries:\n',
+//   db.iterator({ limit: -1 })
+//     .collect()
+//     .map((e) => e.payload.value))
