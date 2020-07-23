@@ -27,10 +27,10 @@ const Editor = ({ onChange, onSubmit, submitting, value = '' }: EditorProps) => 
 
 type CommentEditorProps = {
   onCommentAdded?: (comment: CommentDto) => void,
-  parentId?: string
+  parentId?: string | null
 }
 
-export const CommentEditor = ({ parentId, onCommentAdded }: CommentEditorProps) => {
+export const CommentEditor = ({ parentId = null, onCommentAdded }: CommentEditorProps) => {
   const [ submitting, setSubmitting ] = useState(false)
   const [ value, setValue ] = useState('')
 

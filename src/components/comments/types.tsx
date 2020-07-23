@@ -6,7 +6,7 @@ export type CommentDto = {
     account: string,
     time: string
   }
-  parentId?: string
+  parentId?: string | null
 }
 
 export type CommentValue = Omit<CommentDto,'id'> & {
